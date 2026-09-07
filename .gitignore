@@ -1,0 +1,12 @@
+# Sample dataset (pulled from the public COCO S3 bucket, not project code)
+coco_tiny/
+coco_tiny.tgz
+
+# Build artifacts
+*.zip
+__pycache__/
+*.pyc
+
+# OS/editor cruft
+.DS_Store
+.vscode/

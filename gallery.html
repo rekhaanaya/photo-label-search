@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Photo Label Search</title>
+<style>
+  :root {
+    --bg: #f4f2ee;
+    --card: #ffffff;
+    --text: #23241f;
+    --muted: #6b6b63;
+    --accent: #2f6f4f;
+    --accent-dark: #245b40;
+    --border: #e2dfd6;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 32px 16px 64px;
+  }
+  .wrap {
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+  .header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  .header .icon { font-size: 34px; }
+  .header h1 {
+    margin: 6px 0 4px;
+    font-size: 22px;
+  }
+  .header p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .search-bar {
+    display: flex;
+    gap: 10px;
+    max-width: 480px;
+    margin: 0 auto 32px;
+  }
+  .search-bar input {
+    flex: 1;
+    padding: 13px 16px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    font-size: 15px;
+    outline: none;
+    background: var(--card);
+  }
+  .search-bar input:focus { border-color: var(--accent); }
+  .search-bar button {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 0 22px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .search-bar button:hover { background: var(--accent-dark); }
+  .search-bar button:disabled { opacity: 0.5; cursor: default; }
+
+  .status {
+    text-align: center;
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 20px;
+    min-height: 20px;
+  }
+  .status.error { color: #a33; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px;
+  }
+  .photo-card {
+    background: var(--card);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    transition: transform 0.15s ease;
+  }
+  .photo-card:hover { transform: translateY(-3px); }
+  .photo-card img {
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+    display: block;
+    background: var(--border);
+  }
+  .photo-card .meta {
+    padding: 8px 10px;
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .empty-state {
+    text-align: center;
+    color: var(--muted);
+    font-size: 14px;
+    padding: 40px 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="header">
+    <div class="icon">🏷️📷</div>
+    <h1>Photo Label Search</h1>
+    <p>Type a label (e.g. "dog", "person", "beach") to find matching photos.</p>
+  </div>
+
+  <div class="search-bar">
+    <input type="text" id="labelInput" placeholder="Search by label..." autocomplete="off" />
+    <button id="searchBtn">Search</button>
+  </div>
+
+  <div class="status" id="status"></div>
+  <div class="grid" id="grid"></div>
+</div>
+
+<script>
+  // Fill this in with your search Lambda's Function URL after deploying search_photos.py
+  const SEARCH_ENDPOINT = "https://tp9lw13cle.execute-api.us-east-1.amazonaws.com/search";
+
+  const inputEl = document.getElementById("labelInput");
+  const btnEl = document.getElementById("searchBtn");
+  const statusEl = document.getElementById("status");
+  const gridEl = document.getElementById("grid");
+
+  async function search() {
+    const label = inputEl.value.trim();
+    if (!label) return;
+
+    btnEl.disabled = true;
+    statusEl.textContent = "Searching...";
+    statusEl.className = "status";
+    gridEl.innerHTML = "";
+
+    try {
+      const url = SEARCH_ENDPOINT + "?label=" + encodeURIComponent(label);
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if (!res.ok) {
+        statusEl.textContent = data.error || "Something went wrong.";
+        statusEl.className = "status error";
+        return;
+      }
+
+      if (data.count === 0) {
+        statusEl.textContent = "";
+        gridEl.innerHTML = `<div class="empty-state">No photos found for "${label}". Try another label.</div>`;
+        return;
+      }
+
+      statusEl.textContent = `${data.count} photo${data.count === 1 ? "" : "s"} tagged "${label}"`;
+
+      gridEl.innerHTML = data.photos.map(p => `
+        <div class="photo-card">
+          <img src="${p.url}" loading="lazy" alt="${label}" />
+          <div class="meta">
+            <span>${p.key.split("/").pop()}</span>
+            <span>${p.confidence ? p.confidence + "%" : ""}</span>
+          </div>
+        </div>
+      `).join("");
+
+    } catch (err) {
+      statusEl.textContent = "Couldn't reach the search service. Check your connection and try again.";
+      statusEl.className = "status error";
+    } finally {
+      btnEl.disabled = false;
+    }
+  }
+
+  btnEl.addEventListener("click", search);
+  inputEl.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") search();
+  });
+</script>
+
+</body>
+</html>
