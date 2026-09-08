@@ -1,8 +1,7 @@
 # Photo Label Search
 
-A small AWS pipeline that labels photos with Amazon Rekognition as they land in S3, stores the labels in DynamoDB, and lets you search for photos by label through a simple web UI.
+A AWS pipeline that labels photos with Amazon Rekognition as they land in S3, stores the labels in DynamoDB, and lets you search for photos by label through a simple web UI.
 
-Built as a learning project using a public sample dataset (a small subset of COCO, pulled from the AWS Open Data bucket `s3://fast-ai-coco`) instead of personal photos, to keep costs and setup low.
 
 ## Architecture
 
